@@ -27,6 +27,7 @@
     "url": "https://github.com/ethereumjs/testrpc"
   },
   "dependencies": {
+    "server-destroy": "^1.0.1",
     "webpack": "^3.0.0"
   }
 }

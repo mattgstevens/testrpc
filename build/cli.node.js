@@ -41790,7 +41790,8 @@ module.exports = {
 // https://github.com/yargs/yargs/issues/781
 var yargs = __webpack_require__(172);
 var Ganache = __webpack_require__(232);
-var pkg = __webpack_require__(513);
+var enableDestroy = __webpack_require__(513);
+var pkg = __webpack_require__(514);
 var corepkg = __webpack_require__(170);
 var URL = __webpack_require__(46);
 var Web3 = __webpack_require__(51);
@@ -41886,6 +41887,7 @@ if (options.fork) {
 }
 
 var server = Ganache.server(options);
+enableDestroy(server);
 
 //console.log("Ganache CLI v" + pkg.version);
 console.log("EthereumJS TestRPC v" + pkg.version + " (ganache-core: " + corepkg.version + ")");
@@ -41960,7 +41962,7 @@ server.listen(options.port, options.hostname, function(err, state) {
 
 // See http://stackoverflow.com/questions/10021373/what-is-the-windows-equivalent-of-process-onsigint-in-node-js
 if (process.platform === "win32") {
-  __webpack_require__(514).createInterface({
+  __webpack_require__(515).createInterface({
     input: process.stdin,
     output: process.stdout
   })
@@ -41971,7 +41973,7 @@ if (process.platform === "win32") {
 
 process.on("SIGINT", function () {
   // graceful shutdown
-  server.close(function(err) {
+  server.destroy(function(err) {
     if (err) {
       console.log(err.stack || err);
     }
@@ -119368,6 +119370,31 @@ module.exports = {
 /* 513 */
 /***/ (function(module, exports) {
 
+module.exports = enableDestroy;
+
+function enableDestroy(server) {
+  var connections = {}
+
+  server.on('connection', function(conn) {
+    var key = conn.remoteAddress + ':' + conn.remotePort;
+    connections[key] = conn;
+    conn.on('close', function() {
+      delete connections[key];
+    });
+  });
+
+  server.destroy = function(cb) {
+    server.close(cb);
+    for (var key in connections)
+      connections[key].destroy();
+  };
+}
+
+
+/***/ }),
+/* 514 */
+/***/ (function(module, exports) {
+
 module.exports = {
 	"name": "ethereumjs-testrpc",
 	"version": "4.0.1",
@@ -119397,12 +119424,13 @@ module.exports = {
 		"url": "https://github.com/ethereumjs/testrpc"
 	},
 	"dependencies": {
+		"server-destroy": "^1.0.1",
 		"webpack": "^3.0.0"
 	}
 };
 
 /***/ }),
-/* 514 */
+/* 515 */
 /***/ (function(module, exports) {
 
 module.exports = require("readline");
